@@ -75,7 +75,6 @@ pm2 start index.js --name sosmed-downloader
 
 ## 💬 Contact & Support
 - Developer: [@xiaogarpu](https://t.me/xiaogarpu)
-- Support Me: [Saweria.co/MbotixTech](https://saweria.co/MbotixTech)
 
 ---
 
