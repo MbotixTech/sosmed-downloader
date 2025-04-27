@@ -24,6 +24,13 @@
 - Download Instagram Reels, Posts, and Stories.
 - Download large files from Terabox.
 - Fast, lightweight, and fully automated.
+- **Admin Broadcast System**:
+  - Support sending text, photo, video broadcasts to all users.
+  - Auto-detect and create link buttons from text.
+  - Full text formatting supported (bold, italic, underline, spoiler, etc).
+  - Auto-remove text-links from body if converted into buttons.
+  - Broadcast report (success/failure) and auto-delete report after 5 minutes.
+  - Admins are excluded from receiving broadcast messages.
 
 ---
 
@@ -49,18 +56,14 @@ cd sosmed-downloader
 # Install all dependencies
 npm install
 
-# Create a .env file and set your environment variables
+# Create a .env or edit .env.example file inside the /bot folder and set your environment variables
 BOT_TOKEN=your_telegram_bot_token
 VPS_API_URL=http://YOUR-IP-ADDRESS:3000
-
-# Start the API server
-node index.js
-
-# Start the Telegram bot
-node bot/bot.js
+ADMINS=your_telegram_admin_id_1,your_telegram_admin_id_2
 
 # (Recommended) Use PM2 for production deployment
-pm2 start index.js --name sosmed-downloader
+pm2 start npm --name yourbotname -- run start:all
+
 ```
 
 ---
