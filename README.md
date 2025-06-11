@@ -4,6 +4,7 @@
 - TikTok
 - Facebook
 - Instagram
+- Twitter/X
 - Terabox
 
 🎯 Just send a link – the bot will automatically fetch and send the video back to you!
@@ -22,6 +23,7 @@
 - Download TikTok videos without watermark.
 - Download Facebook Reels and video posts.
 - Download Instagram Reels, Posts, and Stories.
+- Download Twitter/X videos in HD quality when available.
 - Download large files from Terabox.
 - Fast, lightweight, and fully automated.
 - **Admin Broadcast System**:
