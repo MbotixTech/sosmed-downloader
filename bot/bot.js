@@ -61,6 +61,7 @@ bot.start(async (ctx) => {
       [{ text: '🎵 TikTok — Download video tanpa watermark', callback_data: 'select_tiktok' }],
       [{ text: '📘 Facebook — Download reels & video', callback_data: 'select_facebook' }],
       [{ text: '📸 Instagram — Download reels, story, feed', callback_data: 'select_instagram' }],
+      [{ text: '🐦 Twitter/X — Download video dari Twitter', callback_data: 'select_twitter' }],
       [{ text: '📦 Terabox — Download file cloud', callback_data: 'select_terabox' }]
     ];
 
@@ -270,6 +271,7 @@ bot.on(['text', 'photo', 'video'], async (ctx) => {
     if (type === 'tiktok') apiUrl = `${VPS_API_URL}/api/tiktok?url=${encodeURIComponent(link)}`;
     if (type === 'terabox') apiUrl = `${VPS_API_URL}/api/terabox?data=${encodeURIComponent(link)}`;
     if (type === 'instagram') apiUrl = `${VPS_API_URL}/api/instagram?url=${encodeURIComponent(link)}`;
+    if (type === 'twitter') apiUrl = `${VPS_API_URL}/api/twitter?url=${encodeURIComponent(link)}`;
 
     const response = await axios.get(apiUrl, { timeout: 60000 });
     const videoUrl = response.data.video_url || response.data.download_url;
