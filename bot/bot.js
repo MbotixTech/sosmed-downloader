@@ -17,11 +17,12 @@ const VPS_API_URL = process.env.VPS_API_URL;
 const ADMINS = process.env.ADMINS ? process.env.ADMINS.split(',').map(id => parseInt(id)) : [];
 const usersFilePath = path.join(__dirname, 'users.json');
 
+
 const activeUsers = new Set();
-const pendingBroadcast = new Map();
-const userState = new Map();
 const lastAction = new Map();
 const lastBotMessage = new Map();
+const pendingBroadcast = new Map();
+const userState = new Map();
 
 
 if (fs.existsSync(usersFilePath)) {
@@ -47,6 +48,8 @@ bot.telegram.getMe().then((info) => {
 });
 
 bot.start(async (ctx) => {
+  if (ctx.chat.type !== 'private') return;
+
   const fullName = [ctx.from.first_name, ctx.from.last_name].filter(Boolean).join(' ') || 'User';
 
   if (!activeUsers.has(ctx.from.id)) {
@@ -62,7 +65,6 @@ bot.start(async (ctx) => {
       [{ text: '📘 Facebook — Download reels & video', callback_data: 'select_facebook' }],
       [{ text: '📸 Instagram — Download reels, story, feed', callback_data: 'select_instagram' }],
       [{ text: '🐦 Twitter/X — Download video dari Twitter', callback_data: 'select_twitter' }],
-      [{ text: '📦 Terabox — Download file cloud', callback_data: 'select_terabox' }]
     ];
 
     if (ADMINS.includes(ctx.from.id)) {
@@ -87,6 +89,8 @@ bot.start(async (ctx) => {
 });
 
 bot.action(/select_(.+)/, async (ctx) => {
+  if (ctx.chat.type !== 'private') return;
+
   const type = ctx.match[1];
   userState.set(ctx.from.id, type);
 
@@ -97,7 +101,10 @@ bot.action(/select_(.+)/, async (ctx) => {
   await ctx.answerCbQuery();
 });
 
+
 bot.action('admin_broadcast', async (ctx) => {
+  if (ctx.chat.type !== 'private') return;
+
   if (!ADMINS.includes(ctx.from.id)) {
     return ctx.answerCbQuery('❌ Kamu tidak punya akses broadcast.', { show_alert: true });
   }
@@ -106,7 +113,79 @@ bot.action('admin_broadcast', async (ctx) => {
   await ctx.answerCbQuery();
 });
 
+function detectPlatform(text) {
+  if (!text) return null;
+  
+  const lowerText = text.toLowerCase();
+  if (lowerText.includes('tiktok.com') || lowerText.includes('vm.tiktok.com') || lowerText.includes('vt.tiktok.com')) {
+    return 'tiktok';
+  }
+  if (lowerText.includes('instagram.com') || lowerText.includes('instagr.am')) {
+    return 'instagram';
+  }
+  if (lowerText.includes('facebook.com') || lowerText.includes('fb.com') || lowerText.includes('fb.watch')) {
+    return 'facebook';
+  }
+  if (lowerText.includes('twitter.com') || lowerText.includes('x.com') || lowerText.includes('t.co')) {
+    return 'twitter';
+  }
+  return null;
+}
+
+function extractUrl(text) {
+  if (!text) return null;
+  
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const matches = text.match(urlRegex);
+  return matches ? matches[0] : text.trim();
+}
+
 bot.on(['text', 'photo', 'video'], async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    const messageText = ctx.message.text || ctx.message.caption || '';
+    const detectedPlatform = detectPlatform(messageText);
+    
+    if (!detectedPlatform) return;
+    
+    const link = extractUrl(messageText);
+    if (!link) return;
+    
+    try {
+      let apiUrl = '';
+      if (detectedPlatform === 'facebook') apiUrl = `${VPS_API_URL}/api/facebook?url=${encodeURIComponent(link)}`;
+      if (detectedPlatform === 'tiktok') apiUrl = `${VPS_API_URL}/api/tiktok?url=${encodeURIComponent(link)}`;
+      if (detectedPlatform === 'instagram') apiUrl = `${VPS_API_URL}/api/instagram?url=${encodeURIComponent(link)}`;
+      if (detectedPlatform === 'twitter') apiUrl = `${VPS_API_URL}/api/twitter?url=${encodeURIComponent(link)}`;
+      
+      const response = await axios.get(apiUrl, { timeout: 60000 });
+      const videoUrl = response.data.video_url || response.data.download_url;
+      
+      if (!videoUrl) return;
+      
+      if (detectedPlatform === 'facebook') {
+        const tempPath = path.join(__dirname, 'temp_video.mp4');
+        const writer = fs.createWriteStream(tempPath);
+
+        const videoStream = await axios({
+          method: 'get',
+          url: videoUrl,
+          responseType: 'stream'
+        });
+
+        videoStream.data.pipe(writer);
+        await finished(writer);
+
+        await ctx.replyWithVideo({ source: tempPath });
+        fs.unlinkSync(tempPath);
+      } else {
+        await ctx.replyWithVideo({ url: videoUrl });
+      }
+    } catch (err) {
+      console.error('❌ Error di group downloader:', err);
+    }
+    return;
+  }
+
   const pending = pendingBroadcast.get(ctx.from.id);
   if (pending) {
     pendingBroadcast.delete(ctx.from.id);
@@ -269,7 +348,6 @@ bot.on(['text', 'photo', 'video'], async (ctx) => {
     let apiUrl = '';
     if (type === 'facebook') apiUrl = `${VPS_API_URL}/api/facebook?url=${encodeURIComponent(link)}`;
     if (type === 'tiktok') apiUrl = `${VPS_API_URL}/api/tiktok?url=${encodeURIComponent(link)}`;
-    if (type === 'terabox') apiUrl = `${VPS_API_URL}/api/terabox?data=${encodeURIComponent(link)}`;
     if (type === 'instagram') apiUrl = `${VPS_API_URL}/api/instagram?url=${encodeURIComponent(link)}`;
     if (type === 'twitter') apiUrl = `${VPS_API_URL}/api/twitter?url=${encodeURIComponent(link)}`;
 
